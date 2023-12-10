@@ -1,0 +1,58 @@
+{
+  "person": {
+    "name": "John Doe",
+    "age": 30,
+    "address": {
+      "city": "New York",
+      "zipcode": "10001",
+      "street": "123 Main Street"
+    },
+    "contacts": [
+      {
+        "type": "email",
+        "value": "john.doe@example.com"
+      },
+      {
+        "type": "phone",
+        "value": "+1 555-1234"
+      }
+    ],
+    "hobbies": ["reading", "traveling", "coding"],
+    "isStudent": false,
+    "grades": {
+      "math": 90,
+      "history": 85,
+      "science": 92
+    }
+  },
+  "company": {
+    "name": "Tech Solutions Inc.",
+    "employees": [
+      {
+        "name": "Alice",
+        "position": "Software Engineer",
+        "skills": ["Java", "Python", "JavaScript"]
+      },
+      {
+        "name": "Bob",
+        "position": "Data Scientist",
+        "skills": ["R", "Python", "Machine Learning"]
+      }
+    ],
+    "officeLocations": [
+      {
+        "city": "San Francisco",
+        "country": "USA"
+      },
+      {
+        "city": "London",
+        "country": "UK"
+      }
+    ]
+  },
+  "metadata": {
+    "createdAt": "2023-01-01T12:00:00Z",
+    "version": 1.0,
+    "isActive": true
+  }
+}

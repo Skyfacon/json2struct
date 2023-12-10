@@ -1,0 +1,1 @@
+{"bool":false,"float":2,"int":2,"intArray":[3,4,5],"nested":{"age":20,"male":false,"name":"张三","school":["北航","北理"],"score":[4.1,5.2,6.3]},"string":"STRING","stringArray":["Value0","Value1","Value2"]}

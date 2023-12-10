@@ -45,6 +45,30 @@ type Options struct {
 	Suffix         string
 }
 
+func ParseFromFile(fileName string, opt Options) (string, error) {
+	dataBytes, err := GetJsonFileDataBytes(fileName)
+	if err != nil {
+		return "", err
+	}
+	var input interface{}
+	if err = json.Unmarshal(dataBytes, &input); err != nil {
+		return "", err
+	}
+	if opt.Name == "" {
+		opt.Name = DefaultStructName
+	}
+	opt.Prefix = swag.ToGoName(opt.Prefix)
+	opt.Suffix = swag.ToGoName(opt.Suffix)
+	option = opt
+	walker := NewWalker(input)
+	walker.start()
+	if debugMode {
+		b, _ := json.MarshalIndent(walker.structure, "", "  ")
+		walker.logln(string(b))
+	}
+	return walker.output(), nil
+}
+
 func Parse(reader io.Reader, opt Options) (string, error) {
 	var input interface{}
 	if err := json.NewDecoder(reader).Decode(&input); err != nil {
