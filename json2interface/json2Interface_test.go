@@ -20,7 +20,7 @@ func Test_structure_get(t *testing.T) {
 		{val: false, typ: reflect.Bool.String()},
 	}
 	for i, path := range paths {
-		val, typ := st.get(path)
+		val, typ := st.Get(path)
 		fmt.Printf("val: %v, typ: %v\n", val, typ)
 		fmt.Printf("res_val: %v, res_typ: %v\n", res[i].val, res[i].typ)
 		if val != res[i].val {

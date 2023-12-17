@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/yudppp/json2struct"
 	"github.com/yudppp/json2struct/json2interface"
 )
@@ -18,47 +19,20 @@ var (
 )
 
 func main() {
-	//flag.Parse()
-	//json2struct.SetDebug(*debug)
-	//opt := json2struct.Options{
-	//	UseOmitempty:   *omitempty,
-	//	UseShortStruct: *short,
-	//	UseLocal:       *local,
-	//	UseExample:     *example,
-	//	Prefix:         *prefix,
-	//	Suffix:         *suffix,
-	//	Name:           strings.ToLower(*name),
-	//}
-	//parsed, err := json2struct.Parse(os.Stdin, opt)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Println(parsed)
-	//json2struct.GenerateRandomInterfaceObject()
-
-	//opt := json2struct.Options{
-	//	UseOmitempty:   false,
-	//	UseShortStruct: true,
-	//	Name:           strings.ToLower(*name),
-	//}
-	//json2struct.SetDebug(true)
-	//out, err := json2struct.ParseFromFile("data1.json", opt)
-	//if err != nil {
-	//	return
-	//}
-	//fmt.Println(out)
-
-	//json2struct.TestWriteInterface2file()
-
-	//json2struct.TestShowDifferentValues()
-
-	//json2struct.TestModifyInterfaceValue()
-
-	s, err := json2interface.ParseFromFile("data1.json")
+	root, err := json2interface.ParseFromFile("data1.json")
 	if err != nil {
 		return
 	}
-	s.Set("$.person.age", 40)
-	s.ToJsonFile("data1ModAge.json")
-
+	paths := []string{"$.person.age", " $.company.employees.[1].name"}
+	for _, path := range paths {
+		s, typ := root.Get(path)
+		fmt.Printf("type:%s,value:%v\n", typ, s.GetVal())
+	}
+	root.Set(paths[0], 40)
+	root.Set(paths[1], "xulikai")
+	for _, path := range paths {
+		s, typ := root.Get(path)
+		fmt.Printf("type:%s,value:%v\n", typ, s.GetVal())
+	}
+	root.ToJsonFile("data1Mod1.json")
 }

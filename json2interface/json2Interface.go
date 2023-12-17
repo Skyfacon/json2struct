@@ -23,11 +23,12 @@ const (
 )
 
 type structure struct {
-	prefix   string       // 表示上一层级的树前缀
-	name     string       // 表示本层级的名称标识
-	data     interface{}  // 表示本层级的值
-	kind     reflect.Kind // 表示本层级的类型
-	children []*structure // 表示子层级的内容
+	prefix   string         // 表示上一层级的树前缀
+	name     string         // 表示本层级的名称标识
+	data     interface{}    // 表示本层级的值
+	kind     reflect.Kind   // 表示本层级的类型
+	children []*structure   // 表示子层级的内容
+	record   map[string]int //根据key快速对children进行索引，找到对应key的child
 }
 
 func parseJsonSchema(dataBytes []byte) (*structure, error) {
@@ -40,6 +41,7 @@ func parseJsonSchema(dataBytes []byte) (*structure, error) {
 		name:     DefaultStructName,
 		data:     input,
 		children: make([]*structure, 0),
+		record:   make(map[string]int),
 	}
 	rootStructure.travel()
 	return rootStructure, nil
@@ -51,7 +53,7 @@ func ParseFromFile(fileName string) (*structure, error) {
 		return nil, err
 	}
 	rootStructure, err := parseJsonSchema(dataBytes)
-	rootStructure.showSchema(" ")
+	rootStructure.ShowSchema(" ")
 	return rootStructure, err
 }
 
@@ -66,22 +68,27 @@ func (s *structure) travel() {
 			kind = getNumberKind(v.Float())
 		}
 		s.kind = kind
+
 	case Array:
 		list, _ := data.([]interface{})
 		s.kind = reflect.Slice // 这个地方统一用slice应该可以涵盖所有的 json 数组类型吧
-		prePath := fmt.Sprintf("%s[]", s.prefix)
-		if len(list) == 0 {
-			return
+		// 如果取出所有的元素放入children中
+		//prePath := fmt.Sprintf("%s[]", s.prefix)
+		for i, oneItem := range list {
+			prePath := fmt.Sprintf("%s.[%d]", s.prefix, i)
+			name := fmt.Sprintf("[%d]", i)
+			curr := &structure{
+				prefix:   prePath,
+				name:     name,
+				data:     oneItem,
+				children: make([]*structure, 0),
+				record:   make(map[string]int),
+			}
+			s.children = append(s.children, curr)
+			s.record[name] = len(s.children) - 1
+			curr.travel()
 		}
-		oneItem := list[0]
-		curr := &structure{
-			prefix:   prePath,
-			name:     s.name + "[]", // name 用什么比较好？
-			data:     oneItem,
-			children: make([]*structure, 0),
-		}
-		s.children = append(s.children, curr)
-		curr.travel()
+
 	case Hash:
 		s.kind = reflect.Map
 		mapValues := data.(map[string]interface{})
@@ -91,8 +98,10 @@ func (s *structure) travel() {
 				name:     k,
 				data:     v,
 				children: make([]*structure, 0),
+				record:   make(map[string]int),
 			}
 			s.children = append(s.children, curr)
+			s.record[k] = len(s.children) - 1
 			curr.travel()
 		}
 	case Invalid:
@@ -100,44 +109,40 @@ func (s *structure) travel() {
 	}
 }
 
-// 如果涉及到数组，path该如何填写？  $.person.contacts[2].type
-func (s *structure) get(path string) (*interface{}, string) {
-	cpath := strings.Split(path, ".")
-	if len(cpath) == 1 {
-		if cpath[0] == s.name {
-			return &s.data, s.kind.String()
+// Get 如果涉及到数组，path该如何填写？  $.person.contacts[2].type
+func (s *structure) Get(path string) (*structure, string) {
+	cpath := strings.Split(path, ".")[1:]
+	curr := s
+	for _, sub := range cpath {
+		if index, ok := curr.record[sub]; ok {
+			curr = curr.children[index]
 		} else {
 			return nil, "Not Found"
 		}
 	}
-	next := cpath[1]
-	for _, child := range s.children {
-		if child.name == next {
-			return child.get(strings.Join(cpath[1:], "."))
-		}
-	}
-	return nil, "Not Found"
+	return curr, curr.kind.String()
+}
+
+func (s *structure) GetVal() interface{} {
+	return s.data
 }
 
 // Set 底层的 val 改变后，是否顶层 data 里包含的 interface{} 也会改变呢？if not， 还需要从顶层到底层进行重新的包装？
 func (s *structure) Set(path string, val interface{}) error {
-	var v *interface{}
+	var v *structure
 	var typ string
-	v, typ = s.get(path)
+	v, typ = s.Get(path)
 	if typ == "Not Found" {
 		return errors.New(typ)
 	}
-	v = &val
-	if v == nil {
-		return errors.New("nil value assign")
-	}
+	v.data = val
 	return nil
 }
 
-func (s *structure) showSchema(indentation string) {
+func (s *structure) ShowSchema(indentation string) {
 	fmt.Printf(indentation + s.prefix + "(" + s.kind.String() + ")" + "\n")
 	for _, v := range s.children {
-		v.showSchema(indentation + indentation)
+		v.ShowSchema(indentation + indentation)
 	}
 }
 
