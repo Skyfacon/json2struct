@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/yudppp/json2struct"
+	"github.com/yudppp/json2struct/json2interface"
 )
 
 var (
@@ -51,6 +52,13 @@ func main() {
 
 	//json2struct.TestShowDifferentValues()
 
-	json2struct.TestModifyInterfaceValue()
+	//json2struct.TestModifyInterfaceValue()
+
+	s, err := json2interface.ParseFromFile("data1.json")
+	if err != nil {
+		return
+	}
+	s.Set("$.person.age", 40)
+	s.ToJsonFile("data1ModAge.json")
 
 }
