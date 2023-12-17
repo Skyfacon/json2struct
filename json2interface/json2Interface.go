@@ -23,11 +23,13 @@ const (
 )
 
 type structure struct {
+	raw      interface{}    // 最原始传进来的data
 	prefix   string         // 表示上一层级的树前缀
 	name     string         // 表示本层级的名称标识
 	data     interface{}    // 表示本层级的值
 	kind     reflect.Kind   // 表示本层级的类型
 	children []*structure   // 表示子层级的内容
+	parent   *structure     // 表示上一层级的内容
 	record   map[string]int //根据key快速对children进行索引，找到对应key的child
 }
 
@@ -40,6 +42,7 @@ func parseJsonSchema(dataBytes []byte) (*structure, error) {
 		prefix:   rootID,
 		name:     DefaultStructName,
 		data:     input,
+		raw:      input,
 		children: make([]*structure, 0),
 		record:   make(map[string]int),
 	}
@@ -83,6 +86,7 @@ func (s *structure) travel() {
 				data:     oneItem,
 				children: make([]*structure, 0),
 				record:   make(map[string]int),
+				parent:   s,
 			}
 			s.children = append(s.children, curr)
 			s.record[name] = len(s.children) - 1
@@ -99,6 +103,7 @@ func (s *structure) travel() {
 				data:     v,
 				children: make([]*structure, 0),
 				record:   make(map[string]int),
+				parent:   s,
 			}
 			s.children = append(s.children, curr)
 			s.record[k] = len(s.children) - 1
@@ -136,7 +141,36 @@ func (s *structure) Set(path string, val interface{}) error {
 		return errors.New(typ)
 	}
 	v.data = val
+	v.rePack()
 	return nil
+}
+
+func (s *structure) rePack() {
+	switch s.kind {
+	case reflect.Slice:
+		newData := make([]interface{}, len(s.children))
+		for i, child := range s.children {
+			newData[i] = child.data
+		}
+		s.data = newData
+	case reflect.Map:
+		newData := make(map[string]interface{})
+		for _, child := range s.children {
+			newData[child.name] = child.data
+		}
+		s.data = newData
+	}
+	if s.parent == nil {
+		return
+	}
+	s.parent.rePack()
+}
+
+func (s *structure) Clear() {
+	s.children = make([]*structure, 0)
+	s.record = make(map[string]int)
+	s.data = s.raw
+	s.travel()
 }
 
 func (s *structure) ShowSchema(indentation string) {

@@ -35,4 +35,10 @@ func main() {
 		fmt.Printf("type:%s,value:%v\n", typ, s.GetVal())
 	}
 	root.ToJsonFile("data1Mod1.json")
+	// clear
+	root.Clear()
+	paths = []string{"$.person.hobbies.[0]", "$.person.isStudent"}
+	root.Set(paths[0], "跳舞")
+	root.Set(paths[1], true)
+	root.ToJsonFile("data1Mod2.json")
 }
